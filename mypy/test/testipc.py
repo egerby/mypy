@@ -56,18 +56,18 @@ class IPCTests(TestCase):
     # Run test_connect_twice a lot, in the hopes of finding issues.
     # This is really slow, so it is skipped, but can be enabled if
     # needed to debug IPC issues.
-    @pytest.mark.skip
-    def test_connect_alot(self) -> None:
-        t0 = time.time()
-        for i in range(1000):
-            try:
-                print(i, 'start')
-                self.test_connect_twice()
-            finally:
-                t1 = time.time()
-                print(i, t1 - t0)
-                sys.stdout.flush()
-                t0 = t1
+    # @pytest.mark.skip
+    # def test_connect_alot(self) -> None:
+    #     t0 = time.time()
+    #     for i in range(1000):
+    #         try:
+    #             print(i, 'start')
+    #             self.test_connect_twice()
+    #         finally:
+    #             t1 = time.time()
+    #             print(i, t1 - t0)
+    #             sys.stdout.flush()
+    #             t0 = t1
 
 
 if __name__ == '__main__':

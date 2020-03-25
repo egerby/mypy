@@ -30,7 +30,7 @@ def default_py2_interpreter() -> str:
     Return full path or exit if failed.
     """
     # TODO: Make this do something reasonable in Windows.
-    for candidate in ('/usr/bin/python2', '/usr/bin/python'):
+    for candidate in ('/usr/bin/python2', '/usr/bin/python', r"C:\Python27\python2.exe"):
         if not os.path.exists(candidate):
             continue
         output = subprocess.check_output([candidate, '--version'],
@@ -251,7 +251,7 @@ def common_dir_prefix(paths: List[str]) -> str:
     for path in paths[1:]:
         while True:
             path = os.path.dirname(path)
-            if (cur + '/').startswith(path + '/'):
+            if (cur + os.path.sep).startswith(path + os.path.sep):
                 cur = path
                 break
     return cur or '.'

@@ -443,6 +443,7 @@ class StubgenUtilSuite(unittest.TestCase):
 
         assert_equal(remove_misplaced_type_comments(original), dest)
 
+    @unittest.skipIf(sys.platform == 'win32', 'Giving only linux paths')
     def test_common_dir_prefix(self) -> None:
         assert common_dir_prefix([]) == '.'
         assert common_dir_prefix(['x.pyi']) == '.'

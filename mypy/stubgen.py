@@ -16,10 +16,10 @@ blocking error during second step will cause the whole program to stop.
 Basic usage:
 
   $ stubgen foo.py bar.py some_directory
-  => Generate out/foo.pyi, out/bar.pyi, and stubs for some_directory (recursively).
+  => Generate out/foo.py, out/bar.py, and stubs for some_directory (recursively).
 
   $ stubgen -m urllib.parse
-  => Generate out/urllib/parse.pyi.
+  => Generate out/urllib/parse.py.
 
   $ stubgen -p urllib
   => Generate stubs for whole urlib package (recursively).
@@ -93,7 +93,6 @@ from mypy.build import build
 from mypy.errors import CompileError, Errors
 from mypy.traverser import has_return_statement
 from mypy.moduleinspect import ModuleInspect
-
 
 # Common ways of naming package containing vendored modules.
 VENDOR_PACKAGES = [
@@ -618,7 +617,7 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
             retfield = ' -> ' + retname
 
         self.add(', '.join(args))
-        self.add("){}: ...\n".format(retfield))
+        self.add("){}:\n{}    pass\n".format(retfield, self._indent))
         self._state = FUNC
 
     def visit_decorator(self, o: Decorator) -> None:
@@ -988,8 +987,15 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
         else:
             typename = self.get_str_type_of_node(rvalue)
         has_rhs = not (isinstance(rvalue, TempNode) and rvalue.no_rhs)
-        initializer = " = ..." if has_rhs and not self.is_top_level() else ""
+        initializer = " = {}".format(self.assignment_value(rvalue, typename)) if has_rhs else ""
         return '%s%s: %s%s\n' % (self._indent, lvalue, typename, initializer)
+
+    def assignment_value(self, rvalue, typename):
+        if typename == 'str':
+            return '"{}"'.format(rvalue.value)
+        elif typename in ['int', 'bool', 'float']:
+            return rvalue.name if hasattr(rvalue, 'name') else rvalue.value
+        return 'None'
 
     def add(self, string: str) -> None:
         """Add text to generated stub."""
@@ -1433,9 +1439,9 @@ def generate_stubs(options: Options) -> None:
         assert mod.path is not None, "Not found module was not skipped"
         target = mod.module.replace('.', '/')
         if os.path.basename(mod.path) == '__init__.py':
-            target += '/__init__.pyi'
+            target += '/__init__.py'
         else:
-            target += '.pyi'
+            target += '.py'
         target = os.path.join(options.output_dir, target)
         files.append(target)
         with generate_guarded(mod.module, target, options.ignore_errors, options.verbose):
@@ -1448,9 +1454,9 @@ def generate_stubs(options: Options) -> None:
     for mod in c_modules:
         if any(py_mod.module.startswith(mod.module + '.')
                for py_mod in py_modules + c_modules):
-            target = mod.module.replace('.', '/') + '/__init__.pyi'
+            target = mod.module.replace('.', '/') + '/__init__.py'
         else:
-            target = mod.module.replace('.', '/') + '.pyi'
+            target = mod.module.replace('.', '/') + '.py'
         target = os.path.join(options.output_dir, target)
         files.append(target)
         with generate_guarded(mod.module, target, options.ignore_errors, options.verbose):
