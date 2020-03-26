@@ -247,6 +247,8 @@ def remove_misplaced_type_comments(source: Union[str, bytes]) -> Union[str, byte
 def common_dir_prefix(paths: List[str]) -> str:
     if not paths:
         return '.'
+    if os.name == 'nt':
+        paths = windowsify_paths(paths)
     cur = os.path.dirname(paths[0])
     for path in paths[1:]:
         while True:
@@ -255,3 +257,14 @@ def common_dir_prefix(paths: List[str]) -> str:
                 cur = path
                 break
     return cur or '.'
+
+
+def windowsify_path(path):
+    return path.replace('/', '\\')
+
+
+def windowsify_paths(paths):
+    windowsified_paths = []
+    for path in paths:
+        windowsified_paths.append(windowsify_path(path))
+    return windowsified_paths

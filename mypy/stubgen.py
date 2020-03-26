@@ -987,7 +987,7 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
         else:
             typename = self.get_str_type_of_node(rvalue)
         has_rhs = not (isinstance(rvalue, TempNode) and rvalue.no_rhs)
-        initializer = " = {}".format(self.assignment_value(rvalue, typename)) if has_rhs else ""
+        initializer = " = {}".format(self.assignment_value(rvalue, typename)) if has_rhs and not self.is_top_level() else ""
         return '%s%s: %s%s\n' % (self._indent, lvalue, typename, initializer)
 
     def assignment_value(self, rvalue, typename):
