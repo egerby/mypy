@@ -652,12 +652,14 @@ class FuncDef(FuncItem, SymbolNode, Statement):
                  'is_conditional',
                  'is_abstract',
                  'original_def',
+                 'original_code',
                  )
 
     def __init__(self,
                  name: str,              # Function name
                  arguments: List[Argument],
                  body: 'Block',
+                 original_code: str = '',
                  typ: 'Optional[mypy.types.FunctionLike]' = None) -> None:
         super().__init__(arguments, body, typ)
         self._name = name
@@ -665,6 +667,7 @@ class FuncDef(FuncItem, SymbolNode, Statement):
         self.is_conditional = False  # Defined conditionally (within block)?
         self.is_abstract = False
         self.is_final = False
+        self.original_code = original_code
         # Original conditional definition
         self.original_def = None  # type: Union[None, FuncDef, Var, Decorator]
 

@@ -51,6 +51,7 @@ from mypy.fastparse import (
 )
 from mypy.options import Options
 from mypy.reachability import mark_block_unreachable
+import ast_decompiler
 
 try:
     from typed_ast import ast27
@@ -437,9 +438,12 @@ class ASTConverter:
         body = self.as_required_block(n.body, lineno)
         if decompose_stmts:
             body.body = decompose_stmts + body.body
+
+        original_code = ''.join(decompile(ln) for ln in n.body)
         func_def = FuncDef(n.name,
                        args,
                        body,
+                       original_code,
                        func_type)
         if isinstance(func_def.type, CallableType):
             # semanal.py does some in-place modifications we want to avoid
@@ -1059,3 +1063,19 @@ class ASTConverter:
     # Index(expr value)
     def visit_Index(self, n: ast27.Index) -> Expression:
         return self.visit(n.value)
+
+
+def decompile(ast, indentation=4, line_length=100, starting_indentation=0):
+    class new_decompiler(ast_decompiler.decompiler.Decompiler):
+        def visit_Str(self, node):
+            if hasattr(node.s, 'decode'):
+                node.s = node.s.decode('utf-8')
+            return super(new_decompiler, self).visit_Str(node)
+
+    decompiler = new_decompiler(
+        indentation=indentation,
+        line_length=line_length,
+        starting_indentation=starting_indentation,
+    )
+
+    return decompiler.run(ast)

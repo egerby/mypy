@@ -574,33 +574,17 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
             # name their 0th argument other than self/cls
             is_self_arg = i == 0 and name == 'self'
             is_cls_arg = i == 0 and name == 'cls'
-            if (annotated_type is None
-                    and not arg_.initializer
-                    and not is_self_arg
-                    and not is_cls_arg):
-                self.add_typing_import("Any")
-                annotation = ": {}".format(self.typing_name("Any"))
-            elif annotated_type and not is_self_arg:
-                annotation = ": {}".format(self.print_annotation(annotated_type))
-            else:
-                annotation = ""
             if arg_.initializer:
-                initializer = '...'
                 if kind in (ARG_NAMED, ARG_NAMED_OPT) and not any(arg.startswith('*')
                                                                   for arg in args):
                     args.append('*')
-                if not annotation:
-                    typename = self.get_str_type_of_node(arg_.initializer, True)
-                    annotation = ': {} = ...'.format(typename)
-                else:
-                    annotation += '={}'.format(initializer)
-                arg = name + annotation
+                arg = name
             elif kind == ARG_STAR:
-                arg = '*%s%s' % (name, annotation)
+                arg = '*%s' % (name)
             elif kind == ARG_STAR2:
-                arg = '**%s%s' % (name, annotation)
+                arg = '**%s' % (name)
             else:
-                arg = name + annotation
+                arg = name
             args.append(arg)
         retname = None
         if o.name != '__init__' and isinstance(o.unanalyzed_type, CallableType):
@@ -610,14 +594,10 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
             # some dunder methods should not have a None return type.
             retname = self.typing_name('Any')
             self.add_typing_import("Any")
-        elif not has_return_statement(o) and not is_abstract:
-            retname = 'None'
-        retfield = ''
-        if retname is not None:
-            retfield = ' -> ' + retname
-
         self.add(', '.join(args))
-        self.add("){}:\n{}    pass\n".format(retfield, self._indent))
+        inside_function_indet = self._indent + '    '
+        body = 'pass' if not o.is_property else inside_function_indet.join(o.original_code.splitlines(True))
+        self.add("):\n{}{}\n\n".format(inside_function_indet, body))
         self._state = FUNC
 
     def visit_decorator(self, o: Decorator) -> None:
@@ -738,7 +718,7 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
         if len(self._output) == n:
             if self._state == EMPTY_CLASS and sep is not None:
                 self._output[sep] = ''
-            self._output[-1] = self._output[-1][:-1] + ' ...\n'
+            self._output[-1] = self._output[-1][:-1] + ' pass\n'
             self._state = EMPTY_CLASS
         else:
             self._state = CLASS
@@ -987,8 +967,8 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
         else:
             typename = self.get_str_type_of_node(rvalue)
         has_rhs = not (isinstance(rvalue, TempNode) and rvalue.no_rhs)
-        initializer = " = {}".format(self.assignment_value(rvalue, typename)) if has_rhs and not self.is_top_level() else ""
-        return '%s%s: %s%s\n' % (self._indent, lvalue, typename, initializer)
+        initializer = " = {}".format(self.assignment_value(rvalue, typename)) if has_rhs else ""
+        return '%s%s%s\n' % (self._indent, lvalue, initializer)
 
     def assignment_value(self, rvalue, typename):
         if typename == 'str':
